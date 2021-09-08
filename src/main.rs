@@ -1,16 +1,38 @@
-const SKIP_STR: &str = "，。；";
 
-fn main() {
-    let learned = "云对雨，雪对风，晚照对晴空。来鸿对去燕，宿鸟对鸣虫。三尺剑，六钧弓，岭北对江东。人间清暑殿，天上广寒宫。两岸晓烟杨柳绿，一园春雨杏花红。两鬓风霜，途次早行之客；一蓑烟雨，溪边晚钓之翁。".to_string();
-    let unlearned = "沿对革，异对同，白叟对黄童。江风对海雾，牧子对渔翁。颜巷陋，阮途穷，冀北对辽东。池中濯足水，门外打头风。梁帝讲经同泰寺，汉皇置酒未央宫。尘虑萦心，懒抚七弦绿绮；霜华满鬓，羞看百炼青铜。".to_string();
+use std::fs::{self, File, OpenOptions};
+use std::io::{Read, Result, Write};
+
+const SKIP_STR: &str = "，。；\n";
+
+fn main() -> Result<()> {
+    let mut learned: String = String::new();
+    File::open("learned.txt")?.read_to_string(&mut learned)?;
+
+    let mut unlearned: String = String::new();
+    File::open("unlearned.txt")?.read_to_string(&mut unlearned)?;
 
     let unique_learned = get_unique(&learned);
 
     let unique_unlearned_origin = get_unique(&unlearned);
 
     let rt = get_diff(unique_unlearned_origin, unique_learned);
-    
-    println!("{:?}", rt);
+
+    output(rt);
+
+    Ok(())
+}
+
+fn output(rt: Vec<char>) -> Result<()> {
+    if let Err(e) = fs::remove_file("output.txt") {
+        println!("{:?}", e);
+    }
+    let mut output_file = OpenOptions::new().write(true).create(true).append(true).open("output.txt")?;
+    for c in rt.iter() {
+        print!("{}", c.to_string());
+        output_file.write_all(format!("{}{}", c.to_string(), "\n").as_bytes())?;
+    }
+
+    Ok(())
 }
 
 fn get_diff(p0: Vec<char>, p1: Vec<char>) -> Vec<char> {

@@ -1,62 +1,50 @@
+use std::collections::HashSet;
+mod const_util;
+mod file_util;
 
-use std::fs::{self, File, OpenOptions};
-use std::io::{Read, Result, Write};
+fn main() {
+    // read learned file, get the learned set of String
+    let learned_result = file_util::read_file_into_set("learned.txt".to_string());
+    let learned_set = match learned_result {
+        Ok(set) => set,
+        Err(_) => {
+            eprintln!("Error reading learned");
+            return;
+        }
+    };
+    // read unlearned file, get the unlearned set of String
+    let unlearned_result = file_util::read_file_into_set("unlearned.txt".to_string());
+    let unlearned_set = match unlearned_result {
+        Ok(set) => set,
+        Err(_) => {
+            eprintln!("Error reading unlearned");
+            return;
+        }
+    };
 
-const SKIP_STR: &str = "，。；\n";
+    let mut diff = unlearned_set
+        .difference(&learned_set)
+        .map(|s| s.to_string())
+        .collect::<HashSet<String>>();
 
-fn main() -> Result<()> {
-    let mut learned: String = String::new();
-    File::open("learned.txt")?.read_to_string(&mut learned)?;
+    // get skip char set
+    let skip_char_set: HashSet<String> = const_util::SKIP_STR
+        .to_string()
+        .chars()
+        .map(|s| s.to_string())
+        .collect::<HashSet<String>>();
 
-    let mut unlearned: String = String::new();
-    File::open("unlearned.txt")?.read_to_string(&mut unlearned)?;
+    // skip the skip char
+    diff = diff
+        .difference(&skip_char_set)
+        .map(|s| s.to_string())
+        .collect::<HashSet<String>>();
 
-    let unique_learned = get_unique(&learned);
-
-    let unique_unlearned_origin = get_unique(&unlearned);
-
-    let rt = get_diff(unique_unlearned_origin, unique_learned);
-
-    output(rt);
-
-    Ok(())
-}
-
-fn output(rt: Vec<char>) -> Result<()> {
-    if let Err(e) = fs::remove_file("output.txt") {
-        println!("{:?}", e);
-    }
-    let mut output_file = OpenOptions::new().write(true).create(true).append(true).open("output.txt")?;
-    for c in rt.iter() {
-        print!("{}", c.to_string());
-        output_file.write_all(format!("{}{}", c.to_string(), "\n").as_bytes())?;
-    }
-
-    Ok(())
-}
-
-fn get_diff(p0: Vec<char>, p1: Vec<char>) -> Vec<char> {
-    let mut rt = Vec::new();
-
-    for to_add in p0 {
-        if !p1.contains(&to_add) {
-            rt.push(to_add);
+    match file_util::write_set_to_file("output.txt".to_string(), diff) {
+        Ok(_) => return,
+        Err(_) => {
+            println!("failed to output!");
+            return;
         }
     }
-
-    rt
-}
-
-fn get_unique(input: &str) -> Vec<char> {
-    let mut rt = Vec::new();
-    for char in input.chars() {
-        if SKIP_STR.contains(char) {
-            continue;
-        }
-        if rt.contains(&char) {
-            continue;
-        }
-        rt.push(char);
-    }
-    rt
 }

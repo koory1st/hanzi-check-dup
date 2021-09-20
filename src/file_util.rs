@@ -13,12 +13,49 @@ pub fn read_file_into_set(file_path: String) -> Result<std::collections::HashSet
 
     for line_result in lines {
         if let Ok(line) = line_result {
-            line.chars().map(|ch| ch.to_string()).for_each(|ch| {
-                ret.insert(ch);
-            })
+            // read line every charactors and insert into result Hash set
+            read_line_into_set(&mut ret, line);
+
+            // line.chars().map(|ch| ch.to_string()).for_each(|ch| {
+            //     ret.insert(ch);
+            // })
         }
     }
     Ok(ret)
+}
+
+fn read_line_into_set(set: &mut HashSet<String>, line: String) {
+    let mut tmp = String::new();
+    for ch in line.chars() {
+        let char_string = ch.to_string();
+        // not alphabet,
+        if char_string.bytes().len() > 1 {
+            set.insert(char_string);
+            continue;
+        }
+
+        // alphabet
+        if char_string.le(&"z".to_string()) && char_string.ge(&"A".to_string()) {
+            tmp.push_str(&char_string);
+        } else {
+            if tmp.chars().count() > 0 {
+                set.insert(tmp.clone());
+                tmp.clear();
+            }
+            continue;
+        }
+    }
+
+    if tmp.chars().count() > 0 {
+        set.insert(tmp);
+    }
+}
+
+#[test]
+fn test_read_line_into_set() {
+    let mut set = HashSet::<String>::new();
+    read_line_into_set(&mut set, "abc, efg,aaaa,ZZZ,AAA".to_string());
+    println!("{:?}", set);
 }
 
 #[test]
